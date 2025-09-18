@@ -1,6 +1,6 @@
 .env
-node_modules
-.gitignore
+ node_modules
 .discloudignore
 .discloud.config
-.config.json
+ config.json
+ db.json
