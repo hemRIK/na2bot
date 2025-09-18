@@ -1,6 +1,6 @@
 .env
 node_modules
+/.vscode
 .discloudignore
 .discloud.config
-config.json
-db.json
+.config.json
