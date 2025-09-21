@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Events } from 'discord.js'
+import { Client, GatewayIntentBits, Events, resolveSKUId } from 'discord.js'
 import fs from 'fs'
 import 'dotenv/config'; // carrega automaticamente as variáveis do .env
 const config = JSON.parse(fs.readFileSync('config.json', 'utf8'))
@@ -8,9 +8,15 @@ import criaemoji from './emoji.mjs'       // se for export default no arquivo
 import toapng from 'gif-to-apng'
 import download from 'download-file'
 import limpar from './msg_delete.js'
+ import { conectadb, removernomes, salvarnomes } from './banco.js';
+ 
+ import dotenv from "dotenv";
+import { totalmem } from 'os';
+ dotenv.config();
 
+const uri = process.env.MONGO_URI
 
-import { db } from './banco.js'    // seu banco já exportando db como export
+     // seu banco já exportando db como export
 
 
 
@@ -47,8 +53,7 @@ client.on(Events.GuildDelete, guild => {
 client.on(Events.MessageCreate, async message => {
   if (message.author.bot) return; // Ignora mensagens de bots
   const msg = message.content.toLowerCase()
-
-   const args = message.content.slice(config.prefix.length).trim().split(/ +/g);
+  const args = message.content.slice(config.prefix.length).trim().split(/ +/g);
    const comando = args.shift().toLocaleLowerCase();
 
     
@@ -83,24 +88,102 @@ message.channel.send("convertido")
 }
 
  
-  switch(msg)
+  switch(comando)
   {
-case '!ping':
+    case 'nome':
+
+  
+      const id = args[0]
+
+      const resultado = await client.users.fetch(id)
+      await message.reply(resultado.username)
+
+
+    break;
+case 'ping':
+ 
+
+
     await message.reply('pong');
     break;
-case '!cls':
+case 'cls':
    await  limpar(message,args);
      // await cls.Events.limpar(message,args)
     break;
-case '!desafio':
-db.data.posts.push('teste')
-db.write()
-     await message.reply('desafio');
+case 'totalmembros':
+
+const guild= message.guild
+ 
+const membros = await guild.members.fetch();
+
+const totalmembros = membros.map(member => member.user.username) 
+const totalmembrosid =membros.map(member =>member.id) 
+
+//fs.writeFileSync("TotalDeMembros.txt", totalmembros);
+//fs.writeFileSync("TotalDeMembrosid.txt", totalmembrosid);
+//await message.reply({ content: "Nome de todos os membros:", files: ["TotalDeMembros.txt"] });
+//await message.reply({ content: "id de todos os membros:", files: ["TotalDeMembrosid.txt"] });
+
+let nomegravar = []
+let idgravar =[]
+ 
+
+for (let i = 0; i <totalmembros.length;i++)
+{
+  
+   nomegravar.push(totalmembros[i])
+   idgravar.push(totalmembrosid[i])
+
+  }
+
+
+
+
+  for(let i =0; i<=totalmembros.length;i++)
+    {
+console.log(`nome do usuario ${nomegravar[i]} e seu ID:${idgravar[i]}`)
+ // await message.reply(`nome do usuario: ${nomegravar[i]} e seu ID:${idgravar[i]}`);
+ await salvarnomes("Nome",nomegravar[i],"ID Discord",idgravar[i])
+ 
+
+    }
+
+//await salvarnomes("nome",nome)
+//await  salvarnomes("discordid",totalmembrosid[i])
+ 
+      
+      
+  
     break;
 }})
-//
+
+
+
+// quando alguem entra 
 client.on("guildMemberAdd",async member => {
+ try{
  
+const novomembronome = member.user.username
+const novomembroid =member.id
+ 
+
+
+await salvarnomes("Nome:",novomembronome,"ID Discord",novomembroid)
+
+console.log(`o membro ${novomembronome} acabou de entrar seu id ${novomembroid} foi adicionado ao banco`)
+}
+
+catch(err){ console.log("rapaz..deu pau em algo ai..")}
+
+
+
+
+
+
+  ///msg de boas vindas em foto///
+
+
+
     
     const canal = await client.channels.fetch("1348002865037180930"); // id do canal do discord 
 
@@ -154,7 +237,20 @@ const avatar = await Jimp.read(bufferPng);
 
    })
 
- 
+client.on("guildMemberRemove",async(member) =>
+  {
+
+    console.log("saiu")
+    try{
+       console.log("saiu depois do try")
+const idmembrosaindo = member.id
+//const nomemembrosaindo = member.user.username
+console.log (idmembrosaindo)
+removernomes(idmembrosaindo)
+
+       }
+catch(err){}
+  })
 
  
 client.login(process.env.TOKEN);

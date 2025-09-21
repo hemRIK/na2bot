@@ -1,30 +1,55 @@
-import { Low } from 'lowdb'
-import { JSONFile } from 'lowdb/node'
-export {db} 
-// Cria conexão com o arquivo JSON
-const adapter = new JSONFile('db.json')
-const db = new Low(adapter, { posts: [] }) // valor padrão inicial
+import { MongoClient, ServerApiVersion } from "mongodb";
+import dotenv from "dotenv";
+
+dotenv.config();
+const uri = process.env.MONGO_URI
  
-// Lê o arquivo
-await db.read()
 
-// Se o arquivo estiver vazio, garante a estrutura mínima
-if (!db.data) {
-  db.data = { posts: [] }
+// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  }
+});
+export async function conectadb()
+{
+
+await client.connect();
+
+return client.db("Meubanco") // transforma db em um objeto "meu banco"
 }
 
-// Se não existir a chave posts, cria
-if (!db.data.posts) {
-  db.data.posts = []
+ const db= await conectadb()
+ export async function salvarnomes(campo,nome,campo2 ,iddiscord)
+ {
+
+ //console.log(nome)
+if(db==null) { db = await conectadb()}
+
+
+ const collectionusuario = db.collection("usuarios")
+ 
+  await collectionusuario.insertOne({[campo]:nome ,[campo2]:iddiscord})
+  
+ //console.log(`nome ${nome} salvo no banco de dados com o id ${iddiscord}`)
+ 
+ }
+export async function removernomes(id)
+{
+
+  console.log("entrou no removernomes ")
+if(db==null) { db = await conectadb(),   console.log("entrou no conectdb ") }
+const campo = "ID Discord"
+ const collectionusuario = db.collection("usuarios")
+ 
+ const resultado = await collectionusuario.deleteOne({[campo]:id})
+
+  if (resultado.deletedCount === 0) {
+      console.log(`Nenhum usuário com ID ${id} foi encontrado no banco.`);
+    } else {
+      console.log(`O usuário com ID ${id} foi removido do banco de dados.`);
+    }
 }
 
-// Agora dá pra usar push sem erro
-db.data.posts.push({ 
-    id:"1111",
-     nick:"henrique" 
-    } )
-
-// Salva no JSON
-await db.write()
-
-console.log("Posts:", db.data.posts)
